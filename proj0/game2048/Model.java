@@ -138,6 +138,14 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        int max = b.size();
+        for (int i = 0; i < max; i += 1) {
+            for (int j = 0; j < max; j+= 1) {
+                if (b.tile(i, j) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +156,32 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        int max = b.size();
+        for (int i = 0; i < max; i += 1) {
+            for (int j = 0; j < max; j+= 1) {
+                if (b.tile(i, j) != null && b.tile(i, j).value() == MAX_PIECE) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean checkNext(Board b, int row, int col) {
+        int max = b.size();
+        for (int i = row - 1; i <= row + 1; i += 1) {
+            for (int j = col - 1; j <= col + 1; j += 1) {
+                if (i < 0 || j < 0 || i >= max || j >= max) {
+                    continue;
+                }
+                if ((i != row && j != col) || (i == row && j == col)) {
+                    continue;
+                }
+                if (b.tile(i, j).value() == b.tile(row, col).value()) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -159,6 +193,18 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        if (emptySpaceExists(b)) {
+            return true;
+        }
+
+        int max = b.size();
+        for (int i = 0; i < max; i += 1) {
+            for (int j = 0; j < max; j += 1) {
+                if (checkNext(b, i, j)) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
