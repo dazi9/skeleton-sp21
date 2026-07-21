@@ -116,7 +116,7 @@ public class Model extends Observable {
 
         int size = this.board.size();
         for (int col = 0; col < size; col += 1) {
-            boolean hasMerge = false;
+            boolean[] hasMerge = new boolean[4];
             Tile[] a = new Tile[4];
             for (int row = size - 1; row > -1; row -= 1) {
                 if (tile(col, row) == null) {
@@ -134,11 +134,11 @@ public class Model extends Observable {
                         }
                         a[j] = a[j - 1];
                     }
-                } else if (a[i - 1] != null && i >= 1 && a[i].value() == a[i-1].value()) {
+                } else if (i >= 1 && a[i - 1] != null && a[i].value() == a[i - 1].value()) {
                     changed = true;
                     this.board.move(col, i, a[i - 1]);
                     this.score = this.score + 2 * a[i].value();
-                    hasMerge = true;
+                    hasMerge[i] = true;
                     for (int j = i - 1; j >= 0; j--) {
                         if (j == 0) {
                             a[j] = null;
@@ -158,11 +158,11 @@ public class Model extends Observable {
                         }
                         a[j] = a[j - 1];
                     }
-                } else if (a[i - 1] != null && i >= 1 && a[i].value() == a[i-1].value()) {
+                } else if (i >= 1 && a[i - 1] != null && a[i].value() == a[i - 1].value()) {
                     changed = true;
                     this.board.move(col, i, a[i - 1]);
                     this.score = this.score + 2 * a[i].value();
-                    hasMerge = true;
+                    hasMerge[i] = true;
                     for (int j = i - 1; j >= 0; j--) {
                         if (j == 0) {
                             a[j] = null;
@@ -172,60 +172,14 @@ public class Model extends Observable {
                     }
                 }
             }
-            for (int i = size - 1; i >= 0; i--) {
-                if (a[i] == null) {
-                    changed = true;
-                    for (int j = i; j >= 0; j--) {
-                        if (j == 0) {
-                            a[j] = null;
-                            break;
-                        }
-                        a[j] = a[j - 1];
-                    }
-                } else if (a[i - 1] != null && i >= 1 && a[i].value() == a[i-1].value()) {
-                    changed = true;
-                    this.board.move(col, i, a[i - 1]);
-                    this.score = this.score + 2 * a[i].value();
-                    hasMerge = true;
-                    for (int j = i - 1; j >= 0; j--) {
-                        if (j == 0) {
-                            a[j] = null;
-                            break;
-                        }
-                        a[j] = a[j - 1];
-                    }
-                }
-            }
-            for (int i = size - 1; i >= 0; i--) {
-                if (a[i] == null) {
-                    changed = true;
-                    for (int j = i; j >= 0; j--) {
-                        if (j == 0) {
-                            a[j] = null;
-                            break;
-                        }
-                        a[j] = a[j - 1];
-                    }
-                } else if (a[i - 1] != null && i >= 1 && a[i].value() == a[i-1].value()) {
-                    changed = true;
-                    this.board.move(col, i, a[i - 1]);
-                    this.score = this.score + 2 * a[i].value();
-                    hasMerge = true;
-                    for (int j = i - 1; j >= 0; j--) {
-                        if (j == 0) {
-                            a[j] = null;
-                            break;
-                        }
-                        a[j] = a[j - 1];
-                    }
-                }
-            }
+
             for (int row = size - 1; row >= 0; row--) {
                 if (a[row] != null) {
                     this.board.move(col, row, a[row]);
                 }
             }
         }
+        this.board.startViewingFrom(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
