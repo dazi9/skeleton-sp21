@@ -148,6 +148,36 @@ public class Model extends Observable {
                     }
                 }
             }
+            for (int row = size - 1; row > -1; row -= 1) {
+                if (tile(col, row) == null) {
+                    a[row] = null;
+                }
+                a[row] = tile(col, row);
+            }
+            for (int i = size - 1; i >= 0; i--) {
+                if (a[i] == null) {
+                    changed = true;
+                    for (int j = i; j >= 0; j--) {
+                        if (j == 0) {
+                            a[j] = null;
+                            break;
+                        }
+                        a[j] = a[j - 1];
+                    }
+                } else if (i >= 1 && a[i - 1] != null && a[i].value() == a[i - 1].value()) {
+                    changed = true;
+                    this.board.move(col, i, a[i - 1]);
+                    this.score = this.score + 2 * a[i].value();
+                    hasMerge[i] = true;
+                    for (int j = i - 1; j >= 0; j--) {
+                        if (j == 0) {
+                            a[j] = null;
+                            break;
+                        }
+                        a[j] = a[j - 1];
+                    }
+                }
+            }
             for (int i = size - 1; i >= 0; i--) {
                 if (a[i] == null) {
                     changed = true;
