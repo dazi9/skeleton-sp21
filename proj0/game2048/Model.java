@@ -107,13 +107,77 @@ public class Model extends Observable {
      *    and the trailing tile does not.
      * */
     public boolean tilt(Side side) {
-        boolean changed;
-        changed = false;
+        this.board.startViewingFrom(side);
+        boolean changed = false;
 
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        int size = this.board.size();
+        for (int col = 0; col < size; col += 1) {
+            boolean hasMerge = false;
+            Tile[] a = new Tile[4];
+            for (int row = size - 1; row > -1; row -= 1) {
+                if (tile(col, row) == null) {
+                    a[row] = null;
+                }
+                a[row] = tile(col, row);
+            }
+            for (int i = size - 1; i >= 0; i--) {
+                if (a[i] == null) {
+                    changed = true;
+                    for (int j = i; j >= 0; j--) {
+                        if (j == 0) {
+                            a[j] = null;
+                            break;
+                        }
+                        a[j] = a[j - 1];
+                    }
+                } else if (a[i - 1] != null && i >= 1 && a[i].value() == a[i-1].value()) {
+                    changed = true;
+                    this.board.move(col, i, a[i - 1]);
+                    this.score = this.score + 2 * a[i].value();
+                    hasMerge = true;
+                    for (int j = i - 1; j >= 0; j--) {
+                        if (j == 0) {
+                            a[j] = null;
+                            break;
+                        }
+                        a[j] = a[j - 1];
+                    }
+                }
+            }
+            for (int i = size - 1; i >= 0; i--) {
+                if (a[i] == null) {
+                    changed = true;
+                    for (int j = i; j >= 0; j--) {
+                        if (j == 0) {
+                            a[j] = null;
+                            break;
+                        }
+                        a[j] = a[j - 1];
+                    }
+                } else if (a[i - 1] != null && i >= 1 && a[i].value() == a[i-1].value()) {
+                    changed = true;
+                    this.board.move(col, i, a[i - 1]);
+                    this.score = this.score + 2 * a[i].value();
+                    hasMerge = true;
+                    for (int j = i - 1; j >= 0; j--) {
+                        if (j == 0) {
+                            a[j] = null;
+                            break;
+                        }
+                        a[j] = a[j - 1];
+                    }
+                }
+            }
+            for (int row = size - 1; row >= 0; row--) {
+                if (a[row] != null) {
+                    this.board.move(col, row, a[row]);
+                }
+            }
+        }
         checkGameOver();
         if (changed) {
             setChanged();
