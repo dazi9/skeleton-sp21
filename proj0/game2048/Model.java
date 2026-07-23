@@ -137,7 +137,7 @@ public class Model extends Observable {
                 } else if (i >= 1 && a[i - 1] != null && a[i].value() == a[i - 1].value()) {
                     changed = true;
                     this.board.move(col, i, a[i - 1]);
-                    this.score = this.score + 2 * a[i].value();
+                    this.score = this.score + 2 * a[i - 1].value();
                     hasMerge[i] = true;
                     for (int j = i - 1; j >= 0; j--) {
                         if (j == 0) {
@@ -167,7 +167,7 @@ public class Model extends Observable {
                 } else if (i >= 1 && a[i - 1] != null && a[i].value() == a[i - 1].value()) {
                     changed = true;
                     this.board.move(col, i, a[i - 1]);
-                    this.score = this.score + 2 * a[i].value();
+                    this.score = this.score + 2 * a[i - 1].value();
                     hasMerge[i] = true;
                     for (int j = i - 1; j >= 0; j--) {
                         if (j == 0) {
@@ -191,7 +191,7 @@ public class Model extends Observable {
                 } else if (i >= 1 && a[i - 1] != null && a[i].value() == a[i - 1].value()) {
                     changed = true;
                     this.board.move(col, i, a[i - 1]);
-                    this.score = this.score + 2 * a[i].value();
+                    this.score = this.score + 2 * a[i - 1].value();
                     hasMerge[i] = true;
                     for (int j = i - 1; j >= 0; j--) {
                         if (j == 0) {
