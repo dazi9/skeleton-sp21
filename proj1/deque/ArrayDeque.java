@@ -1,7 +1,5 @@
 package deque;
 
-import antlr.Utils;
-
 public class ArrayDeque<T> {
     private T[] items;
     private int size;
@@ -11,8 +9,8 @@ public class ArrayDeque<T> {
     public ArrayDeque() {
         size = 0;
         items = (T[]) new Object[8];
-        front = 0;
-        back = items.length - 1;
+        front = 1;
+        back = 0;
     }
 
     private void resize(int length) {
@@ -26,9 +24,9 @@ public class ArrayDeque<T> {
         if (size > items.length) {
             resize(2 * size);
         }
-        items[front] = item;
         front--;
-        front = (front + size) % size;
+        front = (front + items.length) % items.length;
+        items[front] = item;
     }
 
     public void addLast(T item) {
@@ -36,16 +34,16 @@ public class ArrayDeque<T> {
         if (size > items.length) {
             resize(2 * size);
         }
-        items[back] = item;
         back++;
-        back = (size - back) % size;
+        back = (items.length + back) % items.length;
+        items[back] = item;
     }
 
     public T removeFirst() {
         T temp = items[front];
         items[front] = null;
         front++;
-        front = (front + size) % size;
+        front = (front + items.length) % items.length;
         if (size > 0) { size--; }
         if (size < items.length/4 && size > 8) {
             resize(items.length/4);
@@ -57,7 +55,7 @@ public class ArrayDeque<T> {
         T temp = items[back];
         items[back] = null;
         back--;
-        back = (size - back) % size;
+        back = (items.length + back) % items.length;
         if (size > 0) { size--; }
         if (size < items.length/4 && size > 8) {
             resize(items.length/4);
@@ -77,12 +75,12 @@ public class ArrayDeque<T> {
         for (int i = 0; i < size; i++) {
             System.out.print(get(front));
             front++;
-            front = (front + size) % size;
+            front = (front + items.length) % items.length;
             System.out.print(" ");
         }
     }
 
     public T get(int index) {
-        return items[(front + index) % size];
+        return items[(front + index) % items.length];
     }
 }
