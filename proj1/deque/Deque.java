@@ -5,9 +5,9 @@ public interface Deque<T> {
     void addLast(T item);
 
     default
-    boolean isEmpty() {
-        return this.size() == 0;
-    }
+        boolean isEmpty() {
+            return this.size() == 0;
+        }
 
     int size();
     void printDeque();

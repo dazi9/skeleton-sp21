@@ -103,7 +103,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
     private class ArrayDequeIterator implements Iterator<T> {
         private int pos;
-        public ArrayDequeIterator() {
+        ArrayDequeIterator() {
             pos = front;
         }
 
@@ -130,7 +130,9 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
             return false;
         }
         ArrayDeque<T> other = (ArrayDeque<T>) o;
-        if (other.size() != this.size()) { return false; }
+        if (other.size() != this.size()) {
+            return false;
+        }
         for (int i = 0; i < size; i++) {
             if (other.get(i) != this.get(i)) {
                 return false;

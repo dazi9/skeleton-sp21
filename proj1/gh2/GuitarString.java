@@ -1,6 +1,7 @@
 package gh2;
 
 
+import deque.ArrayDeque;
 import deque.Deque;
 
 
@@ -17,9 +18,10 @@ public class GuitarString {
 
     /* Create a guitar string of the given frequency.  */
     public GuitarString(double frequency) {
+        buffer = new ArrayDeque<Double>();
         int capacity = (int) Math.round(SR / frequency);
         for (int i = 0; i < capacity; i++) {
-            buffer.addFirst((double)0);
+            buffer.addFirst((double) 0);
         }
     }
 
@@ -36,9 +38,9 @@ public class GuitarString {
      * the Karplus-Strong algorithm.
      */
     public void tic() {
-        Double front_sample = buffer.removeFirst();
-        Double second_sample = sample();
-        Double avg = (front_sample + second_sample) / 2 * DECAY;
+        Double frontSample = buffer.removeFirst();
+        Double secondSample = sample();
+        Double avg = (frontSample + secondSample) / 2 * DECAY;
         buffer.addLast(avg);
     }
 
