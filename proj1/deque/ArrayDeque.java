@@ -2,7 +2,7 @@ package deque;
 
 import java.util.Iterator;
 
-public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private T[] items;
     private int size;
     private int front;
@@ -52,9 +52,11 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         items[front] = null;
         front++;
         front = (front + items.length) % items.length;
-        if (size > 0) { size--; }
-        if (size < items.length/4 && size > 8) {
-            resize(items.length/4);
+        if (size > 0) {
+            size--;
+        }
+        if (size < items.length / 4 && size > 8) {
+            resize(items.length / 4);
         }
         return temp;
     }
@@ -65,9 +67,11 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         items[back] = null;
         back--;
         back = (items.length + back) % items.length;
-        if (size > 0) { size--; }
-        if (size < items.length/4 && size > 8) {
-            resize(items.length/4);
+        if (size > 0) {
+            size--;
+        }
+        if (size < items.length / 4 && size > 8) {
+            resize(items.length / 4);
         }
         return temp;
     }
@@ -104,7 +108,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         }
 
         public boolean hasNext() {
-            return pos != back;
+            return (pos != back);
         }
 
         public T next() {
@@ -116,8 +120,12 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
     }
 
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null) { return false; }
+        if (this == o) {
+            return true;
+        }
+        if (o == null) {
+            return false;
+        }
         if (!(o instanceof ArrayDeque)) {
             return false;
         }
