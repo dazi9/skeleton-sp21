@@ -93,15 +93,16 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         return null;
     }
 
-    public T getRecursive(int index) {
-        Node p = sentinel.next;
-        if (index > 0 && p.equals(sentinel)) {
-            return null;
-        }
-        if (index == 0) {
+    private T recursive(int index, Node p) {
+        if (index == 0 || p.equals(sentinel)) {
             return p.item;
         }
-        return getRecursive(index - 1);
+        return recursive(index - 1, p.next);
+    }
+
+    public T getRecursive(int index) {
+        Node p = sentinel.next;
+        return recursive(index, p);
     }
 
     @Override
@@ -130,10 +131,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         if (this == o) {
             return true;
         }
-        if (o == null) {
-            return false;
-        }
-        if (!(o instanceof Deque)) {
+        if (!(o instanceof LinkedListDeque)) {
             return false;
         }
         LinkedListDeque<T> other = (LinkedListDeque<T>) o;

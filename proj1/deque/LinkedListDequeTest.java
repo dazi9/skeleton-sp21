@@ -131,4 +131,21 @@ public class LinkedListDequeTest {
 
 
     }
+
+    @Test
+    /* Check if you can create LinkedListDeques with different parameterized types*/
+    public void getRecursiveTest() {
+
+
+        LinkedListDeque<String>  lld1 = new LinkedListDeque<String>();
+
+        lld1.addFirst("string");
+        lld1.addFirst("cat");
+        lld1.addFirst("hello");
+
+        assertEquals("Should have the same value", "hello", lld1.getRecursive(0));
+        assertEquals("Should have the same value", "cat", lld1.getRecursive(1));
+        assertEquals("Should have the same value", "string", lld1.getRecursive(2));
+        assertNull("Should have the same value", lld1.getRecursive(3));
+    }
 }
