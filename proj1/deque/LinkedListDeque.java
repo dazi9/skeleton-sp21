@@ -113,7 +113,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private class LinkedListDequeIterator implements Iterator<T> {
         private Node pos;
         LinkedListDequeIterator() {
-            pos = sentinel;
+            pos = sentinel.next;
         }
 
         public boolean hasNext() {
@@ -131,7 +131,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof LinkedListDeque)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
         LinkedListDeque<T> other = (LinkedListDeque<T>) o;
