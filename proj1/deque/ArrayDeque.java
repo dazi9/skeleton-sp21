@@ -23,7 +23,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
             front = front + items.length;
         } else {
             System.arraycopy(items, 0, a, 0, (back + 1) % items.length);
-            System.arraycopy(items, front, a, length - (items.length - front), items.length - front);
+            System.arraycopy(items, front, a, length - items.length + front, items.length - front);
             front = length - (items.length - front);
         }
         items = a;
