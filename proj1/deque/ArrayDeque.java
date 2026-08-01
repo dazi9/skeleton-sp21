@@ -103,17 +103,19 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
     private class ArrayDequeIterator implements Iterator<T> {
         private int pos;
+        private int num;
         ArrayDequeIterator() {
             pos = front;
         }
 
         public boolean hasNext() {
-            return (pos != back);
+            return num < size;
         }
 
         public T next() {
             T returnItem = items[pos];
             pos++;
+            num++;
             pos = (pos + items.length) % items.length;
             return returnItem;
         }
@@ -131,7 +133,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
             return false;
         }
         for (int i = 0; i < size; i++) {
-            if (other.get(i) != this.get(i)) {
+            if (!other.get(i).equals(this.get(i))) {
                 return false;
             }
         }
