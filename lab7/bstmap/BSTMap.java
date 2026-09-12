@@ -35,15 +35,20 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K , V> {
 
     /** Removes all of the mappings from this map. */
     public void clear() {
-        root = null;
+        clear(root);
         size = 0;
+    }
+
+    private void clear(BSTNode node) {
+        if (node != null) {
+            clear(node.left);
+            clear(node.right);
+            node = null;
+        }
     }
 
     /* Returns true if this map contains a mapping for the specified key. */
     public boolean containsKey(K key) {
-        if (key == null) {
-            throw new IllegalArgumentException("argument to containsKey() is null");
-        }
         return get(key) != null;
     }
 
@@ -56,7 +61,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K , V> {
 
     private V get(BSTNode node, K key) {
         if (key == null) {
-            throw new IllegalArgumentException("call get() with null key");
+            return null;
         }
         if (node == null){
             return null;
@@ -78,16 +83,20 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K , V> {
 
     /* Associates the specified value with the specified key in this map. */
     public void put(K key, V value) {
+        if (get(key) != null) {
+            size += 1;
+        }
         put(root, key, value);
-        size += 1;
     }
 
     private void put(BSTNode node, K key, V value) {
         if (node == null) {
             node = new BSTNode(key, value);
+            return;
         }
         int cmp = key.compareTo(node.key);
         if (cmp == 0) {
+            node.key = key;
             node.val = value;
         } else if (cmp > 0) {
             put(node.right, key, value);
