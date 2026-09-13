@@ -35,40 +35,39 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K , V> {
 
     /** Removes all of the mappings from this map. */
     public void clear() {
-        clear(root);
+        root = null;
         size = 0;
     }
 
-    private void clear(BSTNode node) {
-        if (node != null) {
-            clear(node.left);
-            clear(node.right);
-            node = null;
-        }
-    }
+
 
     /* Returns true if this map contains a mapping for the specified key. */
     public boolean containsKey(K key) {
-        return get(key) != null;
+        if (get(root, key) != null) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /* Returns the value to which the specified key is mapped, or null if this
      * map contains no mapping for the key.
      */
     public V get(K key) {
-        return get(root, key);
-    }
-
-    private V get(BSTNode node, K key) {
-        if (key == null) {
+        if (get(root, key) != null) {
+            return get(root, key).val;
+        } else {
             return null;
         }
+    }
+
+    private BSTNode get(BSTNode node, K key) {
         if (node == null){
             return null;
         }
         int cmp = key.compareTo(node.key);
         if (cmp == 0) {
-            return node.val;
+            return node;
         } else if (cmp > 0) {
             return get(node.right, key);
         } else {
@@ -83,25 +82,30 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K , V> {
 
     /* Associates the specified value with the specified key in this map. */
     public void put(K key, V value) {
-        if (get(key) != null) {
+        if (!containsKey(key)) {
             size += 1;
         }
         put(root, key, value);
     }
 
     private void put(BSTNode node, K key, V value) {
+        if (root == null) {
+            root = new BSTNode(key, value);
+            return;
+        }
         if (node == null) {
             node = new BSTNode(key, value);
-            return;
         }
         int cmp = key.compareTo(node.key);
         if (cmp == 0) {
             node.key = key;
             node.val = value;
         } else if (cmp > 0) {
+            node.right = new BSTNode(key, value);
             put(node.right, key, value);
         } else {
-            put (node.left, key, value);
+            node.left = new BSTNode(key, value);
+            put(node.left, key, value);
         }
     }
 
