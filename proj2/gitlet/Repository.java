@@ -49,7 +49,8 @@ public class Repository {
             writeContents(currentCommit, initCommit.getCommitSHA1());
             writeObject(join(commits, initCommit.getCommitSHA1()), initCommit);
         } else {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.out.println(
+                "A Gitlet version-control system already exists in the current directory.");
         }
     }
 
@@ -65,7 +66,8 @@ public class Repository {
             return;
         }
         File stagingFile = join(GITLET_DIR, "stagingFile");
-        HashMap<String, String> map = (HashMap<String, String>) readObject(stagingFile, HashMap.class);
+        HashMap<String, String> map =
+                (HashMap<String, String>) readObject(stagingFile, HashMap.class);
         String blobSHA1 = sha1(readContents(file));
         if (map.containsKey(fileName) && Objects.equals(map.get(fileName), blobSHA1)) {
             return;
@@ -159,12 +161,16 @@ public class Repository {
         File currentBranchFile = join(branches, readContentsAsString(currentBranch));
         File currentCommit = join(commits, readContentsAsString(currentBranchFile));
         File commitFile = join(commits, readContentsAsString(branchFile));
-        HashMap<String, String> targetMap = new HashMap<>(readObject(commitFile, Commit.class).getMap());
-        HashMap<String, String> currentMap = new HashMap<>(readObject(currentCommit, Commit.class).getMap());
+        HashMap<String, String> targetMap =
+                new HashMap<>(readObject(commitFile, Commit.class).getMap());
+        HashMap<String, String> currentMap =
+                new HashMap<>(readObject(currentCommit, Commit.class).getMap());
         for (String fileName : targetMap.keySet()) {
             File file = join(CWD, fileName);
             if (file.exists() && !currentMap.containsKey(fileName)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.out.println(
+                    "There is an untracked file in the way; "
+                            + "delete it, or add and commit it first.");
                 return;
             }
         }
@@ -333,29 +339,72 @@ public class Repository {
             if (readContentsAsString(currentBranch).equals(branchName)) {
                 System.out.print("*");
             }
-            message(branchName);
+            System.out.println(branchName);
         }
         message("");
 
         File stagingFile = join(GITLET_DIR, "stagingFile");
         message("=== Staged Files ===");
-        TreeMap<String, String> map = new TreeMap<>(readObject(stagingFile, HashMap.class));
-        for (String fileName : map.keySet()) {
-            message(fileName);
+        TreeMap<String, String> stagingMap =
+                new TreeMap<>(readObject(stagingFile, HashMap.class));
+        for (String fileName : stagingMap.keySet()) {
+            System.out.println(fileName);
         }
         message("");
 
+        message("=== Removed Files ===");
         File removalFile = join(GITLET_DIR, "removalFile");
         TreeSet<String> rmMap = new TreeSet<>(readObject(removalFile, HashSet.class));
         for (String fileName : rmMap) {
-            message(fileName);
+            System.out.println(fileName);
         }
         message("");
 
         message("=== Modifications Not Staged For Commit ===");
+        TreeSet<String> output = new TreeSet<>();
+        File commits = join(GITLET_DIR, "commits");
+        File branchFile = join(branches, readContentsAsString(currentBranch));
+        File currentCommitFile = join(commits, readContentsAsString(branchFile));
+        TreeMap<String, String> currentMap =
+                new TreeMap<>(readObject(currentCommitFile, Commit.class).getMap());
+        File blobs = join(GITLET_DIR, "blobs");
+        for (String fileName : currentMap.keySet()) {
+            File file = join(CWD, fileName);
+            File blob = join(blobs, currentMap.get(fileName));
+            if (file.exists()
+                    && !stagingMap.containsKey(fileName)
+                    && !rmMap.contains(fileName)
+                    && !Arrays.equals(readContents(file), readContents(blob))) {
+                output.add(fileName + " (modified)");
+            }
+            if (!file.exists() && !rmMap.contains(fileName)) {
+                output.add(fileName + " (deleted)");
+            }
+        }
+        for (String fileName : stagingMap.keySet()) {
+            File file = join(CWD, fileName);
+            File blob = join(blobs, stagingMap.get(fileName));
+            if (file.exists() && !Arrays.equals(readContents(file), readContents(blob))) {
+                output.add(fileName + " (modified)");
+            }
+            if (!file.exists()) {
+                output.add(fileName + " (deleted)");
+            }
+        }
+        for (String fileName : output) {
+            System.out.println(fileName);
+        }
         message("");
 
         message("=== Untracked Files ===");
+        List<String> fileList = plainFilenamesIn(CWD);
+        for (String fileName : fileList) {
+            File file = join(CWD, fileName);
+            if ((!stagingMap.containsKey(fileName) && !currentMap.containsKey(fileName))
+                    || (file.exists() && rmMap.contains(fileName))) {
+                System.out.println(fileName);
+            }
+        }
         message("");
     }
 
@@ -378,7 +427,9 @@ public class Repository {
         for (String fileName : targetMap.keySet()) {
             File file = join(CWD, fileName);
             if (file.exists() && !currentMap.containsKey(fileName)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.out.println(
+                    "There is an untracked file in the way; "
+                            + "delete it, or add and commit it first.");
                 return;
             }
         }
