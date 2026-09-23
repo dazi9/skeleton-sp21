@@ -14,76 +14,130 @@ public class Main {
             System.exit(0);
         }
         String firstArg = args[0];
+        int len = args.length;
         switch (firstArg) {
             case "init":
-                validateNumArgs("init", args, 1);
-                Repository.initCommand();
+                if (len == 1) {
+                    Repository.initCommand();
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "add":
-                validateNumArgs("add", args, 2);
-                String fileName = args[1];
-                Repository.addCommand(fileName);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String fileName = args[1];
+                    Repository.addCommand(fileName);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "commit":
-                validateNumArgs("commit", args, 2);
-                String message = args[1];
-                Repository.commitCommand(message);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String message = args[1];
+                    Repository.commitCommand(message);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "checkout":
+                Repository.checkInit();
                 if (args.length == 3 && args[1].equals("--")) {
-                    fileName = args[2];
+                    String fileName = args[2];
                     Repository.checkoutFile(fileName);
                 } else if (args.length == 4 && args[2].equals("--")) {
-                    fileName = args[3];
+                    String fileName = args[3];
                     String commitID = args[1];
                     Repository.checkoutCommitFile(commitID, fileName);
                 } else if (args.length == 2) {
                     String branch = args[1];
                     Repository.checkoutBranch(branch);
+                } else {
+                    System.out.println("Incorrect operands.");
                 }
                 break;
             case "log":
-                Repository.logCommand();
+                if (len == 1) {
+                    Repository.checkInit();
+                    Repository.logCommand();
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "branch":
-                String branchName = args[1];
-                Repository.branchCommand(branchName);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String branchName = args[1];
+                    Repository.branchCommand(branchName);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "rm-branch":
-                branchName = args[1];
-                Repository.rmBranchCommand(branchName);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String branchName = args[1];
+                    Repository.rmBranchCommand(branchName);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "global-log":
-                Repository.globalLogCommand();
+                if (len == 1) {
+                    Repository.checkInit();
+                    Repository.globalLogCommand();
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "find":
-                String commitMessage = args[1];
-                Repository.findCommand(commitMessage);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String commitMessage = args[1];
+                    Repository.findCommand(commitMessage);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "rm":
-                fileName = args[1];
-                Repository.rmCommand(fileName);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String fileName = args[1];
+                    Repository.rmCommand(fileName);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "status":
-                Repository.statusCommand();
+                if (len == 1) {
+                    Repository.checkInit();
+                    Repository.statusCommand();
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "reset":
-                String commitID = args[1];
-                Repository.resetCommand(commitID);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String commitID = args[1];
+                    Repository.resetCommand(commitID);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             case "merge":
-                branchName = args[1];
-                Repository.mergeCommand(branchName);
+                if (len == 2) {
+                    Repository.checkInit();
+                    String branchName = args[1];
+                    Repository.mergeCommand(branchName);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
                 break;
             default:
+                System.out.println("No command with that name exists.");
                 break;
-        }
-    }
-
-    public static void validateNumArgs(String cmd, String[] args, int n) {
-        if (args.length != n) {
-            throw new RuntimeException(
-                    String.format("Invalid number of arguments for: %s.", cmd));
         }
     }
 }

@@ -48,18 +48,25 @@ public class Repository {
             File currentCommit = join(branches, "master");
             writeContents(currentCommit, initCommit.getCommitSHA1());
             writeObject(join(commits, initCommit.getCommitSHA1()), initCommit);
+            File removalFile = join(GITLET_DIR, "removalFile");
+            HashSet<String> s = new HashSet<>();
+            writeObject(removalFile, s);
         } else {
             System.out.println(
                 "A Gitlet version-control system already exists in the current directory.");
         }
     }
 
+    public static void checkInit() {
+        if (!GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
+        }
+    }
+
 
     public static void addCommand(String fileName) {
 
-        /* This section does the stagingFile part.
-         *
-         */
         File file = join(CWD, fileName);
         if (!file.exists()) {
             System.out.println("File does not exist.");
@@ -69,23 +76,42 @@ public class Repository {
         HashMap<String, String> map =
                 (HashMap<String, String>) readObject(stagingFile, HashMap.class);
         String blobSHA1 = sha1(readContents(file));
-        if (map.containsKey(fileName) && Objects.equals(map.get(fileName), blobSHA1)) {
-            return;
+        File currentBranch = join(GITLET_DIR, "currentBranch");
+        File branches = join(GITLET_DIR, "branches");
+        File branchFile = join(branches, readContentsAsString(currentBranch));
+        File commits = join(GITLET_DIR, "commits");
+        File currentCommit = join(commits, readContentsAsString(branchFile));
+        Commit commit = readObject(currentCommit, Commit.class);
+        File removalFile = join(GITLET_DIR, "removalFile");
+        HashSet<String> rm = readObject(removalFile, HashSet.class);
+        if (commit.getMap().containsKey(fileName)) {
+            rm.remove(fileName);
+            writeObject(removalFile, rm);
+            if (commit.getMap().get(fileName).equals(blobSHA1)) {
+                map.remove(fileName);
+                Utils.writeObject(stagingFile, map);
+                return;
+            } else {
+                map.put(fileName, blobSHA1);
+                writeObject(stagingFile, map);
+            }
+        } else {
+            map.put(fileName, blobSHA1);
+            writeObject(stagingFile, map);
         }
-        map.put(fileName, blobSHA1);
-        Utils.writeObject(stagingFile, map);
 
-        /* This section does the blobs part.
-         *
-         */
+
         File blobs = join(GITLET_DIR, "blobs");
         File blob = join(blobs, blobSHA1);
-        Utils.writeContents(blob, (Object) readContents(file));
+        writeContents(blob, (Object) readContents(file));
     }
 
     public static void commitCommand(String message) {
         File stagingFile = join(GITLET_DIR, "stagingFile");
-        if (readObject(stagingFile, HashMap.class).isEmpty()) {
+        File removalFile = join(GITLET_DIR, "removalFile");
+        HashSet<String> rmMap = readObject(removalFile, HashSet.class);
+        HashMap<String, String> stagingMap = readObject(stagingFile, HashMap.class);
+        if (stagingMap.isEmpty() && rmMap.isEmpty()) {
             System.out.println("No changes added to the commit.");
             return;
         }
@@ -99,11 +125,15 @@ public class Repository {
             File commits = join(GITLET_DIR, "commits");
             File parent = join(commits, readContentsAsString(currentCommit));
             HashMap<String, String> parentMap = readObject(parent, Commit.class).getMap();
-            HashMap<String, String> stagingMap = readObject(stagingFile, HashMap.class);
             HashMap<String, String> map = new HashMap<>(parentMap);
             for (String key : stagingMap.keySet()) {
                 map.put(key, stagingMap.get(key));
             }
+            for (String key : rmMap) {
+                map.remove(key);
+            }
+            rmMap.clear();
+            writeObject(removalFile, rmMap);
             Commit commit = new Commit(message, readContentsAsString(currentCommit), map);
             File fileName = join(commits, commit.getCommitSHA1());
             writeObject(fileName, commit);
@@ -137,7 +167,7 @@ public class Repository {
     private static void checkoutCommitFromFile(Commit commit, String fileName) {
         File file = join(CWD, fileName);
         if (!commit.getMap().containsKey(fileName)) {
-            System.out.println("File does not exists in that commit.");
+            System.out.println("File does not exist in that commit.");
             return;
         }
         File blobs = join(GITLET_DIR, "blobs");
@@ -189,6 +219,9 @@ public class Repository {
         File stagingFile = join(GITLET_DIR, "stagingFile");
         writeObject(stagingFile, m);
         writeContents(currentBranch, branch);
+        File removalFile = join(GITLET_DIR, "removalFile");
+        HashSet<String> rm = new HashSet<>();
+        writeObject(removalFile, rm);
     }
 
     public static void logCommand() {
@@ -202,7 +235,7 @@ public class Repository {
             message("===");
             message("commit %s", commit.getCommitSHA1());
             String date = String.format(Locale.US,
-                    "%ta %tb %td %tT %tY %tz",
+                    "%ta %tb %te %tT %tY %tz",
                     commit.getDate(),
                     commit.getDate(),
                     commit.getDate(),
@@ -218,7 +251,7 @@ public class Repository {
         message("===");
         message("commit %s", commit.getCommitSHA1());
         String date = String.format(Locale.US,
-                "%ta %tb %td %tT %tY %tz",
+                "%ta %tb %te %tT %tY %tz",
                 commit.getDate(),
                 commit.getDate(),
                 commit.getDate(),
@@ -267,7 +300,7 @@ public class Repository {
             message("===");
             message("commit %s", commit.getCommitSHA1());
             String date = String.format(Locale.US,
-                    "%ta %tb %td %tT %tY %tz",
+                    "%ta %tb %te %tT %tY %tz",
                     commit.getDate(),
                     commit.getDate(),
                     commit.getDate(),
@@ -300,8 +333,6 @@ public class Repository {
     public static void rmCommand(String fileName) {
         File stagingFile = join(GITLET_DIR, "stagingFile");
         File removalFile = join(GITLET_DIR, "removalFile");
-        HashSet<String> s = new HashSet<>();
-        writeObject(removalFile, s);
         File currentBranch = join(GITLET_DIR, "currentBranch");
         File branches = join(GITLET_DIR, "branches");
         File currentCommitFile = join(branches, readContentsAsString(currentBranch));
@@ -433,7 +464,24 @@ public class Repository {
                 return;
             }
         }
-
+        File blobs = join(GITLET_DIR, "blobs");
+        for (String fileName : targetMap.keySet()) {
+            File blob = join(blobs, targetMap.get(fileName));
+            File file = join(CWD, fileName);
+            writeContents(file, readContents(blob));
+        }
+        for (String fileName : currentMap.keySet()) {
+            if (!targetMap.containsKey(fileName)) {
+                restrictedDelete(fileName);
+            }
+        }
+        File stagingFile = join(GITLET_DIR, "stagingFile");
+        File removalFile = join(GITLET_DIR, "removalFile");
+        HashMap<String, String> stagingMap = new HashMap<>();
+        HashSet<String> rmSet = new HashSet<>();
+        writeObject(stagingFile, stagingMap);
+        writeObject(removalFile, rmSet);
+        writeContents(branchFile, targetCommit.getCommitSHA1());
     }
 
     public static void mergeCommand(String branchName) {

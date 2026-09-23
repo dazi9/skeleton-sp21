@@ -43,7 +43,7 @@ public class Commit implements Serializable {
     public Commit(String message, String parentSHA1, HashMap<String, String> map) {
         this.message = message;
         this.parentSHA1 = parentSHA1;
-        if (message.equals("initial commit")) {
+        if (parentSHA1 == null) {
             date = new Date(0);
         } else {
             date = new Date(System.currentTimeMillis());
@@ -81,13 +81,5 @@ public class Commit implements Serializable {
 
     public String getMessage() {
         return message;
-    }
-
-    /** Make the initial commit. */
-    public void initCommit() {
-        date = new Date(0);
-        message = "initial commit";
-        map = new HashMap<>();
-        commitSHA1 = sha1(date.toString(), message, map);
     }
 }
