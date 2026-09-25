@@ -389,7 +389,7 @@ public class Repository {
             System.out.println("Cannot remove the current branch.");
             return;
         }
-        restrictedDelete(branch);
+        branch.delete();
     }
 
     public static void globalLogCommand() {
