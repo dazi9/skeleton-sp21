@@ -33,16 +33,20 @@ public class Commit implements Serializable {
     private String message;
 
     /** The parent of current commit. */
-    private String parentSHA1;
+    private String firstParentSHA1;
 
     /** The set of reflection: filename → SHA1. */
     private HashMap<String, String> map;
 
+    /** The merged parent of current commit. */
+    private String secondParentSHA1;
 
     /** The constructor */
-    public Commit(String message, String parentSHA1, HashMap<String, String> map) {
+    public Commit(String message, String parentSHA1, String secondParentSHA1,
+        HashMap<String, String> map) {
         this.message = message;
-        this.parentSHA1 = parentSHA1;
+        this.firstParentSHA1 = parentSHA1;
+        this.secondParentSHA1 = secondParentSHA1;
         if (parentSHA1 == null) {
             date = new Date(0);
         } else {
@@ -50,12 +54,15 @@ public class Commit implements Serializable {
         }
         this.map = new HashMap<>(map);
         TreeMap<String, String> m = new TreeMap<>(this.map);
-        ArrayList<Object> list = new ArrayList<>(3 + 2 * m.size());
+        ArrayList<Object> list = new ArrayList<>(4 + 2 * m.size());
         list.add(message);
         if (parentSHA1 != null) {
             list.add(parentSHA1);
         }
-        list.add(date.toString());
+        if (secondParentSHA1 != null) {
+            list.add(secondParentSHA1);
+        }
+        list.add(String.valueOf(date.getTime()));
         for (String key : m.keySet()) {
             list.add(key);
             list.add(m.get(key));
@@ -71,8 +78,8 @@ public class Commit implements Serializable {
         return map;
     }
 
-    public String getParentSHA1() {
-        return parentSHA1;
+    public String getFirstParentSHA1() {
+        return firstParentSHA1;
     }
 
     public Date getDate() {
@@ -81,5 +88,9 @@ public class Commit implements Serializable {
 
     public String getMessage() {
         return message;
+    }
+
+    public String getSecondParentSHA1() {
+        return secondParentSHA1;
     }
 }

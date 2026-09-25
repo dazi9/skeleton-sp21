@@ -5,6 +5,102 @@ package gitlet;
  */
 public class Main {
 
+    private static boolean requireArgs(String[] args, int n) {
+        if (args.length != n) {
+            System.out.println("Incorrect operands.");
+            return false;
+        }
+        return true;
+    }
+
+    private static void cmdAdd(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.addCommand(args[1]);
+    }
+
+    private static void cmdCommit(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.commitCommand(args[1]);
+    }
+
+    private static void cmdLog(String[] args) {
+        if (!requireArgs(args, 1)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.logCommand();
+    }
+
+    private static void cmdStatus(String[] args) {
+        if (!requireArgs(args, 1)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.statusCommand();
+    }
+
+    private static void cmdGlobalLog(String[] args) {
+        if (!requireArgs(args, 1)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.globalLogCommand();
+    }
+
+    private static void cmdBranch(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.branchCommand(args[1]);
+    }
+
+    private static void cmdRmBranch(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.rmBranchCommand(args[1]);
+    }
+
+    private static void cmdReset(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.resetCommand(args[1]);
+    }
+
+    private static void cmdRm(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.rmCommand(args[1]);
+    }
+
+    private static void cmdMerge(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.mergeCommand(args[1]);
+    }
+
+    private static void cmdFind(String[] args) {
+        if (!requireArgs(args, 2)) {
+            return;
+        }
+        Repository.checkInit();
+        Repository.findCommand(args[1]);
+    }
+
     /** Usage: java gitlet.Main ARGS, where ARGS contains
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
@@ -24,33 +120,23 @@ public class Main {
                 }
                 break;
             case "add":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String fileName = args[1];
-                    Repository.addCommand(fileName);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdAdd(args);
                 break;
             case "commit":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String message = args[1];
-                    Repository.commitCommand(message);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdCommit(args);
                 break;
             case "checkout":
-                Repository.checkInit();
                 if (args.length == 3 && args[1].equals("--")) {
+                    Repository.checkInit();
                     String fileName = args[2];
                     Repository.checkoutFile(fileName);
                 } else if (args.length == 4 && args[2].equals("--")) {
+                    Repository.checkInit();
                     String fileName = args[3];
                     String commitID = args[1];
                     Repository.checkoutCommitFile(commitID, fileName);
                 } else if (args.length == 2) {
+                    Repository.checkInit();
                     String branch = args[1];
                     Repository.checkoutBranch(branch);
                 } else {
@@ -58,82 +144,31 @@ public class Main {
                 }
                 break;
             case "log":
-                if (len == 1) {
-                    Repository.checkInit();
-                    Repository.logCommand();
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdLog(args);
                 break;
             case "branch":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String branchName = args[1];
-                    Repository.branchCommand(branchName);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdBranch(args);
                 break;
             case "rm-branch":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String branchName = args[1];
-                    Repository.rmBranchCommand(branchName);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdRmBranch(args);
                 break;
             case "global-log":
-                if (len == 1) {
-                    Repository.checkInit();
-                    Repository.globalLogCommand();
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdGlobalLog(args);
                 break;
             case "find":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String commitMessage = args[1];
-                    Repository.findCommand(commitMessage);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdFind(args);
                 break;
             case "rm":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String fileName = args[1];
-                    Repository.rmCommand(fileName);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdRm(args);
                 break;
             case "status":
-                if (len == 1) {
-                    Repository.checkInit();
-                    Repository.statusCommand();
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdStatus(args);
                 break;
             case "reset":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String commitID = args[1];
-                    Repository.resetCommand(commitID);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdReset(args);
                 break;
             case "merge":
-                if (len == 2) {
-                    Repository.checkInit();
-                    String branchName = args[1];
-                    Repository.mergeCommand(branchName);
-                } else {
-                    System.out.println("Incorrect operands.");
-                }
+                cmdMerge(args);
                 break;
             default:
                 System.out.println("No command with that name exists.");

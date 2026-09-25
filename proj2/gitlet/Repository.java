@@ -1,6 +1,5 @@
 package gitlet;
 
-import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.List;
@@ -29,6 +28,117 @@ public class Repository {
     public static final File GITLET_DIR = join(CWD, ".gitlet");
 
 
+    private static String getCurrentBranch() {
+        File currentBranch = join(GITLET_DIR, "currentBranch");
+        return readContentsAsString(currentBranch);
+    }
+
+    private static Commit getBranchCommit(String branchName) {
+        File branches = join(GITLET_DIR, "branches");
+        File branchFile = join(branches, branchName);
+        File commits = join(GITLET_DIR, "commits");
+        File commitFile = join(commits, readContentsAsString(branchFile));
+        return readObject(commitFile, Commit.class);
+    }
+
+    private static Commit getHeadCommit() {
+        return getBranchCommit(getCurrentBranch());
+    }
+
+    private static Commit findSplitPoint(Commit currentCommit, Commit givenCommit) {
+        Set<String> currentAncestors = new HashSet<>();
+        currentAncestors.add(currentCommit.getCommitSHA1());
+        Queue<String> queue = new ArrayDeque<>();
+        queue.add(currentCommit.getCommitSHA1());
+        File commits = join(GITLET_DIR, "commits");
+        while (!queue.isEmpty()) {
+            String commitID = queue.remove();
+            File commitFile = join(commits, commitID);
+            currentCommit = readObject(commitFile, Commit.class);
+            String firstParentSHA1 = currentCommit.getFirstParentSHA1();
+            String secondParentSHA1 = currentCommit.getSecondParentSHA1();
+            if (firstParentSHA1 != null && currentAncestors.add(firstParentSHA1)) {
+                queue.add(firstParentSHA1);
+            }
+            if (secondParentSHA1 != null && currentAncestors.add(secondParentSHA1)) {
+                queue.add(secondParentSHA1);
+            }
+        }
+        Commit splitCommit = null;
+        Set<String> givenAncestors = new HashSet<>();
+        givenAncestors.add((givenCommit.getCommitSHA1()));
+        queue.add(givenCommit.getCommitSHA1());
+        while (!queue.isEmpty()) {
+            String commitID = queue.remove();
+            File commitFile = join(commits, commitID);
+            Commit currentCommitNode = readObject(commitFile, Commit.class);
+            String firstParentSHA1 = currentCommitNode.getFirstParentSHA1();
+            String secondParentSHA1 = currentCommitNode.getSecondParentSHA1();
+            if (firstParentSHA1 != null && givenAncestors.add(firstParentSHA1)) {
+                queue.add(firstParentSHA1);
+            }
+            if (secondParentSHA1 != null && givenAncestors.add(secondParentSHA1)) {
+                queue.add(secondParentSHA1);
+            }
+        }
+        Set<String> commonAncestor = new HashSet<>();
+        for (String ancestor : givenAncestors) {
+            if (currentAncestors.contains(ancestor)) {
+                commonAncestor.add(ancestor);
+            }
+        }
+        queue.add(givenCommit.getCommitSHA1());
+        while (!queue.isEmpty()) {
+            String commitID = queue.remove();
+            File commitFile = join(commits, commitID);
+            Commit commit = readObject(commitFile, Commit.class);
+            if (commonAncestor.contains(commitID)) {
+                splitCommit = commit;
+                return splitCommit;
+            } else {
+                if (commit.getFirstParentSHA1() != null) {
+                    queue.add(commit.getFirstParentSHA1());
+                }
+                if (commit.getSecondParentSHA1() != null) {
+                    queue.add(commit.getSecondParentSHA1());
+                }
+            }
+        }
+        return splitCommit;
+    }
+
+    private static void mergeCommitCommand(String message,
+        String currentBranchName, String givenBranchName) {
+        File stagingFile = join(GITLET_DIR, "stagingFile");
+        File removalFile = join(GITLET_DIR, "removalFile");
+        HashSet<String> rmMap = readObject(removalFile, HashSet.class);
+        HashMap<String, String> stagingMap = readObject(stagingFile, HashMap.class);
+        if (stagingMap.isEmpty() && rmMap.isEmpty()) {
+            System.out.println("No changes added to the commit.");
+            return;
+        }
+        File branches = join(GITLET_DIR, "branches");
+        File currentBranch = join(branches, currentBranchName);
+        File commits = join(GITLET_DIR, "commits");
+        HashMap<String, String> parentMap = getHeadCommit().getMap();
+        HashMap<String, String> map = new HashMap<>(parentMap);
+        for (String key : stagingMap.keySet()) {
+            map.put(key, stagingMap.get(key));
+        }
+        for (String key : rmMap) {
+            map.remove(key);
+        }
+        rmMap.clear();
+        writeObject(removalFile, rmMap);
+        Commit commit = new Commit(message, readContentsAsString(currentBranch),
+                getBranchCommit(givenBranchName).getCommitSHA1(), map);
+        File fileName = join(commits, commit.getCommitSHA1());
+        writeObject(fileName, commit);
+        writeContents(currentBranch, commit.getCommitSHA1());
+        HashMap<String, String> m = new HashMap<>();
+        writeObject(stagingFile, m);
+    }
+
     public static void initCommand() {
         if (!GITLET_DIR.exists()) {
             GITLET_DIR.mkdirs();
@@ -40,7 +150,7 @@ public class Repository {
             File commits = join(GITLET_DIR, "commits");
             commits.mkdir();
             HashMap<String, String> m = new HashMap<>();
-            Commit initCommit = new Commit("initial commit", null, m);
+            Commit initCommit = new Commit("initial commit", null, null, m);
             File branches = join(GITLET_DIR, "branches");
             branches.mkdir();
             File currentBranch = join(GITLET_DIR, "currentBranch");
@@ -66,9 +176,8 @@ public class Repository {
 
 
     public static void addCommand(String fileName) {
-
         File file = join(CWD, fileName);
-        if (!file.exists()) {
+        if (!file.exists() || !file.isFile()) {
             System.out.println("File does not exist.");
             return;
         }
@@ -76,12 +185,7 @@ public class Repository {
         HashMap<String, String> map =
                 (HashMap<String, String>) readObject(stagingFile, HashMap.class);
         String blobSHA1 = sha1(readContents(file));
-        File currentBranch = join(GITLET_DIR, "currentBranch");
-        File branches = join(GITLET_DIR, "branches");
-        File branchFile = join(branches, readContentsAsString(currentBranch));
-        File commits = join(GITLET_DIR, "commits");
-        File currentCommit = join(commits, readContentsAsString(branchFile));
-        Commit commit = readObject(currentCommit, Commit.class);
+        Commit commit = getHeadCommit();
         File removalFile = join(GITLET_DIR, "removalFile");
         HashSet<String> rm = readObject(removalFile, HashSet.class);
         if (commit.getMap().containsKey(fileName)) {
@@ -99,8 +203,6 @@ public class Repository {
             map.put(fileName, blobSHA1);
             writeObject(stagingFile, map);
         }
-
-
         File blobs = join(GITLET_DIR, "blobs");
         File blob = join(blobs, blobSHA1);
         writeContents(blob, (Object) readContents(file));
@@ -120,11 +222,9 @@ public class Repository {
             return;
         } else {
             File branches = join(GITLET_DIR, "branches");
-            File currentBranch = join(GITLET_DIR, "currentBranch");
-            File currentCommit = join(branches, readContentsAsString(currentBranch));
+            File currentBranch = join(branches, getCurrentBranch());
             File commits = join(GITLET_DIR, "commits");
-            File parent = join(commits, readContentsAsString(currentCommit));
-            HashMap<String, String> parentMap = readObject(parent, Commit.class).getMap();
+            HashMap<String, String> parentMap = getHeadCommit().getMap();
             HashMap<String, String> map = new HashMap<>(parentMap);
             for (String key : stagingMap.keySet()) {
                 map.put(key, stagingMap.get(key));
@@ -134,29 +234,32 @@ public class Repository {
             }
             rmMap.clear();
             writeObject(removalFile, rmMap);
-            Commit commit = new Commit(message, readContentsAsString(currentCommit), map);
+            Commit commit = new Commit(message, readContentsAsString(currentBranch), null, map);
             File fileName = join(commits, commit.getCommitSHA1());
             writeObject(fileName, commit);
-            writeContents(currentCommit, commit.getCommitSHA1());
+            writeContents(currentBranch, commit.getCommitSHA1());
             HashMap<String, String> m = new HashMap<>();
             writeObject(stagingFile, m);
         }
     }
 
     public static void checkoutFile(String fileName) {
-        File branches = join(GITLET_DIR, "branches");
-        File currentBranch = join(GITLET_DIR, "currentBranch");
-        File commits = join(GITLET_DIR, "commits");
-        File currentCommit = join(branches, readContentsAsString(currentBranch));
-        File currentCommitFile = join(commits, readContentsAsString(currentCommit));
-        Commit commit = readObject(currentCommitFile, Commit.class);
+        Commit commit = getHeadCommit();
         checkoutCommitFromFile(commit, fileName);
     }
 
     public static void checkoutCommitFile(String commitID, String fileName) {
         File commits = join(GITLET_DIR, "commits");
+        List<String> commitList = plainFilenamesIn(commits);
+        int commitCount = 0;
+        for (String commitName : commitList) {
+            if (commitName.startsWith(commitID)) {
+                commitID = commitName;
+                commitCount++;
+            }
+        }
         File commitFile = join(commits, commitID);
-        if (!commitFile.exists()) {
+        if (!commitFile.exists() || commitCount >= 2) {
             System.out.println("No commit with that id exists.");
             return;
         }
@@ -183,18 +286,16 @@ public class Repository {
             return;
         }
         File currentBranch = join(GITLET_DIR, "currentBranch");
-        if (readContentsAsString(currentBranch).equals(branch)) {
+        if (getCurrentBranch().equals(branch)) {
             System.out.println("No need to checkout the current branch.");
             return;
         }
-        File commits = join(GITLET_DIR, "commits");
-        File currentBranchFile = join(branches, readContentsAsString(currentBranch));
-        File currentCommit = join(commits, readContentsAsString(currentBranchFile));
-        File commitFile = join(commits, readContentsAsString(branchFile));
+        Commit currentCommit = getHeadCommit();
+        Commit targetCommit = getBranchCommit(branch);
         HashMap<String, String> targetMap =
-                new HashMap<>(readObject(commitFile, Commit.class).getMap());
+                new HashMap<>(targetCommit.getMap());
         HashMap<String, String> currentMap =
-                new HashMap<>(readObject(currentCommit, Commit.class).getMap());
+                new HashMap<>(currentCommit.getMap());
         for (String fileName : targetMap.keySet()) {
             File file = join(CWD, fileName);
             if (file.exists() && !currentMap.containsKey(fileName)) {
@@ -225,15 +326,15 @@ public class Repository {
     }
 
     public static void logCommand() {
-        File branches = join(GITLET_DIR, "branches");
-        File currentBranch = join(GITLET_DIR, "currentBranch");
-        File currentCommit = join(branches, readContentsAsString(currentBranch));
         File commits = join(GITLET_DIR, "commits");
-        File commitFile = join(commits, readContentsAsString(currentCommit));
-        Commit commit = readObject(commitFile, Commit.class);
-        while (commit.getParentSHA1() != null) {
+        Commit commit = getHeadCommit();
+        while (commit.getFirstParentSHA1() != null) {
             message("===");
             message("commit %s", commit.getCommitSHA1());
+            if (commit.getSecondParentSHA1() != null) {
+                message("Merge: " + commit.getFirstParentSHA1().substring(0, 7)
+                        + " " + commit.getSecondParentSHA1().substring(0, 7));
+            }
             String date = String.format(Locale.US,
                     "%ta %tb %te %tT %tY %tz",
                     commit.getDate(),
@@ -245,7 +346,7 @@ public class Repository {
             message("Date: %s", date);
             message("%s", commit.getMessage());
             message("");
-            File parentCommitFile = join(commits, commit.getParentSHA1());
+            File parentCommitFile = join(commits, commit.getFirstParentSHA1());
             commit = readObject(parentCommitFile, Commit.class);
         }
         message("===");
@@ -299,6 +400,10 @@ public class Repository {
             Commit commit = readObject(commitFile, Commit.class);
             message("===");
             message("commit %s", commit.getCommitSHA1());
+            if (commit.getSecondParentSHA1() != null) {
+                message("Merge: " + commit.getFirstParentSHA1().substring(0, 7)
+                        + " " + commit.getSecondParentSHA1().substring(0, 7));
+            }
             String date = String.format(Locale.US,
                     "%ta %tb %te %tT %tY %tz",
                     commit.getDate(),
@@ -333,12 +438,7 @@ public class Repository {
     public static void rmCommand(String fileName) {
         File stagingFile = join(GITLET_DIR, "stagingFile");
         File removalFile = join(GITLET_DIR, "removalFile");
-        File currentBranch = join(GITLET_DIR, "currentBranch");
-        File branches = join(GITLET_DIR, "branches");
-        File currentCommitFile = join(branches, readContentsAsString(currentBranch));
-        File commits = join(GITLET_DIR, "commits");
-        File currentCommit = join(commits, readContentsAsString(currentCommitFile));
-        Commit commit = readObject(currentCommit, Commit.class);
+        Commit commit = getHeadCommit();
         File file = join(CWD, fileName);
         HashMap<String, String> stagingMap = readObject(stagingFile, HashMap.class);
         HashMap<String, String> commitMap = commit.getMap();
@@ -393,11 +493,9 @@ public class Repository {
 
         message("=== Modifications Not Staged For Commit ===");
         TreeSet<String> output = new TreeSet<>();
-        File commits = join(GITLET_DIR, "commits");
-        File branchFile = join(branches, readContentsAsString(currentBranch));
-        File currentCommitFile = join(commits, readContentsAsString(branchFile));
+        Commit commit = getHeadCommit();
         TreeMap<String, String> currentMap =
-                new TreeMap<>(readObject(currentCommitFile, Commit.class).getMap());
+                new TreeMap<>(commit.getMap());
         File blobs = join(GITLET_DIR, "blobs");
         for (String fileName : currentMap.keySet()) {
             File file = join(CWD, fileName);
@@ -442,15 +540,20 @@ public class Repository {
     public static void resetCommand(String commitID) {
         File commits = join(GITLET_DIR, "commits");
         List<String> commitList = plainFilenamesIn(commits);
-        if (!commitList.contains(commitID)) {
+        int commitCount = 0;
+        for (String commitName : commitList) {
+            if (commitName.startsWith(commitID)) {
+                commitID = commitName;
+                commitCount++;
+            }
+        }
+        if (!commitList.contains(commitID) || commitCount >= 2) {
             System.out.println("No commit with that id exists.");
             return;
         }
-        File currentBranch = join(GITLET_DIR, "currentBranch");
         File branches = join(GITLET_DIR, "branches");
-        File branchFile = join(branches, readContentsAsString(currentBranch));
-        File commitFile = join(commits, readContentsAsString(branchFile));
-        Commit currentCommit = readObject(commitFile, Commit.class);
+        File branchFile = join(branches, getCurrentBranch());
+        Commit currentCommit = getHeadCommit();
         File targetCommitFile = join(commits, commitID);
         Commit targetCommit = readObject(targetCommitFile, Commit.class);
         HashMap<String, String> targetMap = new HashMap<>(targetCommit.getMap());
@@ -485,6 +588,133 @@ public class Repository {
     }
 
     public static void mergeCommand(String branchName) {
+        File stagingFile = join(GITLET_DIR, "stagingFile");
+        File removalFile = join(GITLET_DIR, "removalFile");
+        if (!readObject(stagingFile, HashMap.class).isEmpty()
+                || !readObject(removalFile, HashSet.class).isEmpty()) {
+            System.out.println("You have uncommitted changes.");
+            return;
+        }
+        File branches = join(GITLET_DIR, "branches");
+        File branch = join(branches, branchName);
+        if (!branch.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        if (branchName.equals(getCurrentBranch())) {
+            System.out.println("Cannot merge a branch with itself.");
+            return;
+        }
+        Commit currentCommit = getHeadCommit();
+        Commit givenCommit = getBranchCommit(branchName);
+        Commit splitPointCommit = findSplitPoint(currentCommit, givenCommit);
+        HashMap<String, String> currentMap = currentCommit.getMap();
+        HashMap<String, String> givenMap = givenCommit.getMap();
+        HashMap<String, String> splitMap = splitPointCommit.getMap();
+        List<String> fileList = plainFilenamesIn(CWD);
+        for (String file : fileList) {
+            if (!currentMap.containsKey(file) && givenMap.containsKey(file)
+                && !givenMap.get(file).equals(splitMap.get(file))) {
+                System.out.println("There is an untracked file in the way;"
+                        + " delete it, or add and commit it first.");
+                return;
+            }
+        }
+        if (splitPointCommit.getCommitSHA1().equals(givenCommit.getCommitSHA1())) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        if (splitPointCommit.getCommitSHA1().equals(currentCommit.getCommitSHA1())) {
+            checkoutBranch(branchName);
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        }
+        boolean successfulMerge = mergeAllFile(branchName);
+        mergeCommitCommand("Merged " + branchName + " into " + getCurrentBranch() + ".",
+                getCurrentBranch(), branchName);
+        if (!successfulMerge) {
+            System.out.println("Encountered a merge conflict.");
+        }
+    }
 
+    private static boolean mergeAllFile(String branchName) {
+        File blobs = join(GITLET_DIR, "blobs");
+        File stagingFile = join(GITLET_DIR, "stagingFile");
+        HashMap<String, String> stagingMap = readObject(stagingFile, HashMap.class);
+        File removalFile = join(GITLET_DIR, "removalFile");
+        HashSet<String> rmSet = readObject(removalFile, HashSet.class);
+        Commit currentCommit = getHeadCommit();
+        Commit givenCommit = getBranchCommit(branchName);
+        HashMap<String, String> currentMap = currentCommit.getMap();
+        HashMap<String, String> givenMap = givenCommit.getMap();
+        Commit splitPointCommit = findSplitPoint(currentCommit, givenCommit);
+        HashMap<String, String> splitMap = splitPointCommit.getMap();
+        Set<String> allFiles = new HashSet<>();
+        allFiles.addAll(splitMap.keySet());
+        allFiles.addAll(currentMap.keySet());
+        allFiles.addAll(givenMap.keySet());
+        boolean successfulMerge = true;
+        for (String fileName : allFiles) {
+            File file = join(CWD, fileName);
+            boolean inSplit = splitMap.containsKey(fileName);
+            boolean inCurrent = currentMap.containsKey(fileName);
+            boolean inGiven = givenMap.containsKey(fileName);
+            String splitContent = splitMap.get(fileName);
+            String currentContent = currentMap.get(fileName);
+            String givenContent = givenMap.get(fileName);
+            if (inGiven && inCurrent && inSplit
+                    && !givenContent.equals(splitContent) && currentContent.equals(splitContent)) {
+                File blob = join(blobs, givenContent);
+                writeContents(file, readContents(blob));
+                stagingMap.put(fileName, sha1(readContents(file)));
+            } else if (inGiven && inCurrent && inSplit
+                    && !currentContent.equals(splitContent) && givenContent.equals(splitContent)) {
+                continue;
+            } else if (inGiven && inCurrent && inSplit && currentContent.equals(givenContent)
+                    && !currentContent.equals(splitContent) && !givenContent.equals(splitContent)) {
+                continue;
+            } else if (!inGiven && inCurrent && !inSplit) {
+                continue;
+            } else if (inGiven && !inCurrent && !inSplit) {
+                File blob = join(blobs, givenContent);
+                writeContents(file, readContents(blob));
+                stagingMap.put(fileName, sha1(readContents(file)));
+            } else if (inSplit && inCurrent && !inGiven && currentContent.equals(splitContent)) {
+                restrictedDelete(fileName);
+                rmSet.add(fileName);
+            } else if (inSplit && inGiven && !inCurrent && givenContent.equals(splitContent)) {
+                continue;
+            } else if (!Objects.equals(givenContent, currentContent)) {
+                successfulMerge = false;
+                if (inGiven && inCurrent) {
+                    File currBlob = join(blobs, currentContent);
+                    File givenBlob = join(blobs, givenContent);
+                    writeContents(file, "<<<<<<< HEAD\n",
+                            readContentsAsString(currBlob), "=======\n",
+                            readContentsAsString(givenBlob), ">>>>>>>\n");
+                    File blob = join(blobs, sha1(readContents(file)));
+                    writeContents(blob, readContents(file));
+                    stagingMap.put(fileName, sha1(readContents(file)));
+                } else if (!inCurrent && inGiven && inSplit && !givenContent.equals(splitContent)) {
+                    File givenBlob = join(blobs, givenContent);
+                    writeContents(file, "<<<<<<< HEAD\n", "=======\n",
+                            readContentsAsString(givenBlob), ">>>>>>>\n");
+                    File blob = join(blobs, sha1(readContents(file)));
+                    writeContents(blob, readContents(file));
+                    stagingMap.put(fileName, sha1(readContents(file)));
+                } else if (inCurrent && !inGiven && inSplit
+                    && !currentContent.equals(splitContent)) {
+                    File currBlob = join(blobs, currentContent);
+                    writeContents(file, "<<<<<<< HEAD\n",
+                            readContentsAsString(currBlob), "=======\n", ">>>>>>>\n");
+                    File blob = join(blobs, sha1(readContents(file)));
+                    writeContents(blob, readContents(file));
+                    stagingMap.put(fileName, sha1(readContents(file)));
+                }
+            }
+        }
+        writeObject(stagingFile, stagingMap);
+        writeObject(removalFile, rmSet);
+        return successfulMerge;
     }
 }
