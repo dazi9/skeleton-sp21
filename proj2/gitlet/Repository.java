@@ -174,7 +174,6 @@ public class Repository {
         }
     }
 
-
     public static void addCommand(String fileName) {
         File file = join(CWD, fileName);
         if (!file.exists() || !file.isFile()) {
