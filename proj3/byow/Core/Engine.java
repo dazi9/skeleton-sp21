@@ -9,6 +9,24 @@ public class Engine {
     public static final int WIDTH = 80;
     public static final int HEIGHT = 30;
 
+    private long interactWithInput(String input) {
+        int indexOfN = 0;
+        int indexOfS = 0;
+        for (int i = 0; i < input.length(); i++) {
+            if (input.charAt(i) == 'N' || input.charAt(i) == 'n') {
+                indexOfN = i;
+                break;
+            }
+        }
+        for (int i = 0; i < input.length(); i++) {
+            if (input.charAt(i) == 'S' || input.charAt(i) == 's') {
+                indexOfS = i;
+                break;
+            }
+        }
+        return Long.parseLong(input.substring(indexOfN + 1, indexOfS));
+    }
+
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
      * including inputs from the main menu.
@@ -38,7 +56,7 @@ public class Engine {
      * @return the 2D TETile[][] representing the state of the world
      */
     public TETile[][] interactWithInputString(String input) {
-        // TODO: Fill out this method so that it run the engine using the input
+        // Fill out this method so that it run the engine using the input
         // passed in as an argument, and return a 2D tile representation of the
         // world that would have been drawn if the same inputs had been given
         // to interactWithKeyboard().
@@ -46,7 +64,10 @@ public class Engine {
         // See proj3.byow.InputDemo for a demo of how you can make a nice clean interface
         // that works for many different input types.
 
-        TETile[][] finalWorldFrame = null;
+        TETile[][] finalWorldFrame = new TETile[WIDTH][HEIGHT];
+        long seed = interactWithInput(input);
+        WorldGenerator generator = new WorldGenerator(seed);
+        finalWorldFrame = generator.generate(finalWorldFrame);
         return finalWorldFrame;
     }
 }
