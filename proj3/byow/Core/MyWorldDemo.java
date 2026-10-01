@@ -15,7 +15,8 @@ public class MyWorldDemo {
         TETile[][] world;
         Engine engine = new Engine();
 
-        world = engine.interactWithInputString("n35154S");
+        world = engine.interactWithInputString("N999Sddd:Q");
+        world = engine.interactWithInputString("lWWWDDD");
 
 
         ter.renderFrame(world);

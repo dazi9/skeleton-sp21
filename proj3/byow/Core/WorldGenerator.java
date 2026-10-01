@@ -52,7 +52,8 @@ public class WorldGenerator {
     }
 
     private boolean checkRoomInWorld(Room room) {
-        if (room.x + room.width >= Engine.WIDTH - MARGIN || room.y + room.height >= Engine.HEIGHT - MARGIN) {
+        if (room.x + room.width >= Engine.WIDTH - MARGIN
+                || room.y + room.height >= Engine.HEIGHT - MARGIN) {
             return false;
         }
         return true;
